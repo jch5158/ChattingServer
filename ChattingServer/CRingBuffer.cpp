@@ -1,6 +1,4 @@
 #include "stdafx.h"
-#include "CExceptionObject.h"
-#include "CMessage.h"
 #include "CRingBuffer.h"
 
 
@@ -70,14 +68,8 @@ int CRingBuffer::GetFreeSize(void)
 // Return: (int)사용가능 용량.
 ////////////////////////////////////////////////////////////////////////
 int CRingBuffer::DirectEnqueueSize(void)
-{
-
-	// 
-	if (this->rear == this->mQueueLen - 1 && this->front == this->mQueueLen - 1)
-	{
-		return this->mQueueLen - 1;
-	}
-	else if (this->rear == this->mQueueLen - 1)
+{	
+	if (this->rear == this->mQueueLen - 1)
 	{
 		return this->front;
 	}
@@ -90,21 +82,14 @@ int CRingBuffer::DirectEnqueueSize(void)
 		return this->front - this->rear - 1;
 	}
 
-
-	//int queueLen = this->mQueueLen;
-
-
-	//return queueLen - this->rear - 1;
-
 }
 
 int CRingBuffer::DirectDequeueSize(void)
 {
 	if (this->front == this->mQueueLen - 1 && this->rear < this->front)
 	{
-		return this->rear;
+		return this->rear + 1;
 	}
-
 	else if (this->rear >= this->front)
 	{
 		return  this->rear - this->front;

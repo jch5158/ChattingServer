@@ -471,14 +471,15 @@ void SendEvent(DWORD clientKey)
 	//}
 
 	//session->mSendQ.Peek(sendBuffer, sendSize);	
-
-	//sendSize = session->mSendQ.DirectDequeueSize();
-
+	
 	char* sendBuffer = session->mSendQ.GetFrontBufferPtr();
 
 	sendSize = session->mSendQ.DirectDequeueSize();
 	
 	retval = send(session->mClientSock, sendBuffer, sendSize, 0);
+
+	session->mSendQ.MoveFront(retval);
+
 	if (retval == SOCKET_ERROR)
 	{
 		DWORD errorValue = WSAGetLastError();
@@ -491,11 +492,7 @@ void SendEvent(DWORD clientKey)
 		Disconnect(session->mUserCode);
 		return;
 	}
-	else
-	{	
-		wprintf_s(L"%d\n", retval);
-		session->mSendQ.MoveFront(retval);
-	}
+
 	return;
 }
 
