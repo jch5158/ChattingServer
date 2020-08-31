@@ -2,7 +2,7 @@
 class CMessage
 {
 public:
-	CMessage(int iSize = 2000);
+	CMessage(int iSize = 3000);
 
 	virtual ~CMessage();
 

@@ -10,6 +10,10 @@
 #define FD_SET_SIZE 64
 
 
+int gRecvSize;
+int gSendSize;
+
+
 struct Session
 {
 	SOCKET mClientSock;
@@ -169,9 +173,9 @@ void PackingResNewUserEnter(Session* session, PacketHeader* packetHeader, CMessa
 
 void StressTestProcessing(Session* session, CMessage* message);
 
-void PackingStressTest(Session* session, WCHAR* wStr, PacketHeader* packetHeader, CMessage* message);
+void PackingStressTest(Session* session, WCHAR* wStr, unsigned short strSize,PacketHeader* packetHeader, CMessage* message);
 
-void SendStressTest(Session* session, WCHAR* wStr);
+void SendStressTest(Session* session, WCHAR* wStr, unsigned short strSize);
 
 
 BYTE MakeCheckSum(WORD msgType, CMessage* message);
@@ -466,12 +470,15 @@ void SendEvent(DWORD clientKey)
 	//	return;
 	//}
 
-	//session->mSendQ.Peek(sendBuffer, sendSize);
+	//session->mSendQ.Peek(sendBuffer, sendSize);	
+
+	//sendSize = session->mSendQ.DirectDequeueSize();
+
+	char* sendBuffer = session->mSendQ.GetFrontBufferPtr();
 
 	sendSize = session->mSendQ.DirectDequeueSize();
-
-
-	retval = send(session->mClientSock, session->mSendQ.GetFrontBufferPtr(), sendSize, 0);
+	
+	retval = send(session->mClientSock, sendBuffer, sendSize, 0);
 	if (retval == SOCKET_ERROR)
 	{
 		DWORD errorValue = WSAGetLastError();
@@ -485,7 +492,8 @@ void SendEvent(DWORD clientKey)
 		return;
 	}
 	else
-	{
+	{	
+		wprintf_s(L"%d\n", retval);
 		session->mSendQ.MoveFront(retval);
 	}
 	return;
@@ -494,6 +502,8 @@ void SendEvent(DWORD clientKey)
 void RecvEvent(DWORD clientKey)
 {
 	int retval;
+
+
 
 	Session* session = FindClient(clientKey);
 	if (session == nullptr)
@@ -516,22 +526,24 @@ void RecvEvent(DWORD clientKey)
 		}
 		return;
 	}
-
-
-	bool retRecvFlag;
 	
-	while (1)
-	{
-		retRecvFlag = CompleteRecvPacket(session);
-		if (retRecvFlag)
+	bool retRecvFlag;	
+	
+	if (retval > 0)
+	{	
+		session->mRecvQ.MoveRear(retval);
+
+		while (1)
 		{
-			session->mRecvQ.MoveRear(retval);
-			break;
-		}
-		else 
-		{
-		//	wprintf_s(L"PacketError %d\n");
-			break;
+			retRecvFlag = CompleteRecvPacket(session);
+			if (retRecvFlag)
+			{
+				break;
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 
@@ -759,7 +771,6 @@ void RoomListPacketProcessing(Session* session, CMessage* message)
 
 
 	SendPacketRoomList(session);
-
 }
 
 // 대화방 목록 패킷 만들기
@@ -1197,30 +1208,27 @@ void StressTestProcessing(Session* session, CMessage* message)
 
 	*message >> wStrSize;
 
-	WCHAR* wStr = (WCHAR*)malloc(wStrSize + 2);
-
-	memset((char*)wStr, 0, wStrSize + 2);
-
+	WCHAR* wStr = (WCHAR*)malloc(wStrSize);
+	
 	message->GetData((char*)wStr, wStrSize);
 
 	message->MoveReadPos(wStrSize);
 
-	SendStressTest(session, wStr);
+	SendStressTest(session, wStr, wStrSize);
 
 	free(wStr);
 }
 
-void PackingStressTest(Session* session, WCHAR* wStr, PacketHeader* packetHeader, CMessage* message)
+void PackingStressTest(Session* session, WCHAR* wStr, unsigned short strSize, PacketHeader* packetHeader, CMessage* message)
 {
 	packetHeader->byCode = dfPACKET_CODE;
 	packetHeader->wMsgType = df_RES_STRESS_ECHO;
 
-	unsigned short wStrSize = wcslen(wStr) * 2;
-	*message << wStrSize;
+	*message << strSize;
 
-	message->PutData((char*)wStr, wStrSize);
+	message->PutData((char*)wStr, strSize);
 
-	message->MoveWritePos(wStrSize);
+	message->MoveWritePos(strSize);
 
 	packetHeader->byCheckSum = MakeCheckSum(df_RES_STRESS_ECHO, message);
 
@@ -1228,13 +1236,13 @@ void PackingStressTest(Session* session, WCHAR* wStr, PacketHeader* packetHeader
 
 }
 
-void SendStressTest(Session* session, WCHAR* wStr)
+void SendStressTest(Session* session, WCHAR* wStr, unsigned short strSize)
 {
 	PacketHeader packetHeader;
 
 	CMessage message;
 
-	PackingStressTest(session, wStr, &packetHeader, &message);
+	PackingStressTest(session, wStr, strSize,&packetHeader, &message);
 
 	SendUnicasting(session, &packetHeader, &message);
 }

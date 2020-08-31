@@ -125,12 +125,15 @@ int CRingBuffer::Enqueue(char* chpData, int iSize)
 {
 	int queueLen = this->mQueueLen;
 
-	int freeSize = GetFreeSize();
+	//int freeSize = GetFreeSize();
 
-	if (iSize > freeSize)
-	{
-		iSize = freeSize;
-	}
+	//if (iSize > freeSize)
+	//{
+	//	int* ptr = nullptr;
+
+	//	*ptr = 10;
+	//	iSize = freeSize;
+	//}
 
 	int sizeCheck = this->rear + iSize;
 
@@ -168,12 +171,14 @@ int CRingBuffer::Dequeue(char* chpDest, int iSize)
 {
 	int queueLen = this->mQueueLen;
 
-	int useSize = GetUseSize();
+	/*int useSize = GetUseSize();
 
 	if (iSize > useSize)
 	{
+		int* ptr = nullptr;
+		*ptr = 10;
 		iSize = useSize;
-	}
+	}*/
 
 	int sizeCheck = this->front + iSize;
 
@@ -215,10 +220,13 @@ int CRingBuffer::Peek(char* chpDest, int iSize)
 
 	int queueLen = this->mQueueLen;
 
+	/*
 	if (iSize > useSize)
 	{
+		int* ptr = nullptr;
+		*ptr = 10;
 		iSize = useSize;
-	}
+	}*/
 
 
 	int sizeCheck = cFront + iSize;
@@ -256,7 +264,6 @@ int CRingBuffer::Peek(char* chpDest, int iSize)
 /////////////////////////////////////////////////////////////////////////
 void CRingBuffer::MoveRear(int iSize)
 {
-
 	this->rear = (this->rear + iSize) % this->mQueueLen;
 
 	return;
@@ -267,33 +274,8 @@ void CRingBuffer::MoveRear(int iSize)
 void CRingBuffer::MoveFront(int iSize)
 {
 	int queueLen = this->mQueueLen;
-	/*
-	int useSize = GetUseSize();
-
-	if (iSize > useSize)
-	{
-		iSize = useSize;
-	}
-
-	int sizeCheck = this->front + iSize;
-
-	if (sizeCheck >= queueLen)
-	{
-		int directSize = queueLen - this->front - 1;
-
-		this->front = this->front + directSize;
-
-		int addSize = iSize - directSize;
-
-		this->front = (this->front + addSize) % queueLen;
-	}
-	else
-	{
-		this->front = this->front + iSize;
-	}*/
-
+	
 	this->front = (this->front + iSize) % this->mQueueLen;
-
 
 	return;
 }
@@ -310,7 +292,6 @@ void CRingBuffer::ClearBuffer(void)
 {
 	this->front = 0;
 	this->rear = 0;
-
 }
 
 
@@ -322,7 +303,7 @@ void CRingBuffer::ClearBuffer(void)
 /////////////////////////////////////////////////////////////////////////
 char* CRingBuffer::GetFrontBufferPtr(void)
 {
-	return &this->mRingBuffer[this->front + 1];
+	return &this->mRingBuffer[(this->front + 1) % this->mQueueLen];
 }
 
 
